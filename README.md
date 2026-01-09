@@ -3,7 +3,7 @@
 A modern, standalone desktop application to enhance audio quality using AI (AudioSR).
 Built with **C# / Avalonia UI** (.NET 9.0) and **Python**.
 
-![Screenshot](https://via.placeholder.com/800x400?text=App+Screenshot+Placeholder)
+![App Screenshot](assets/app_ui.png)
 
 ## 🚀 Features
 
@@ -30,6 +30,7 @@ To run this application, you need:
 The app allows tuning for your specific hardware via the **Settings** menu.
 
 ### Processing Chunk Size (Seconds)
+![GPU Performance](assets/gpu_perf.png)
 This setting controls how many seconds of audio are processed at once.
 
 *   **30.0s (Default)**: Optimized for High-End GPUs (e.g., **RTX 5070 Ti, 4070, 3080**). Offers the best speed/stability balance.
