@@ -1,0 +1,9 @@
+.vs/
+.vscode/
+bin/
+obj/
+*.user
+*.suo
+output/
+*.log
+settings.json

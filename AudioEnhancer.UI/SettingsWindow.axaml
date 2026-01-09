@@ -1,0 +1,57 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="AudioEnhancer.UI.SettingsWindow"
+        Title="Settings"
+        Width="600" Height="400"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        Background="#1e1e1e">
+
+    <StackPanel Margin="20" Spacing="15">
+        <TextBlock Text="Configuration" FontSize="20" FontWeight="Bold" Foreground="White" Margin="0,0,0,10"/>
+
+        <!-- FFMPEG -->
+        <StackPanel Spacing="5">
+            <TextBlock Text="FFmpeg Path (exe):" Foreground="#aaaaaa"/>
+            <Grid ColumnDefinitions="*, Auto">
+                <TextBox Grid.Column="0" Name="TxtFfmpeg" Background="#252525" Foreground="White"/>
+                <Button Grid.Column="1" Name="BtnBrowseFfmpeg" Content="..." Margin="5,0,0,0"/>
+            </Grid>
+        </StackPanel>
+
+        <!-- Python / Conda -->
+        <StackPanel Spacing="5">
+            <TextBlock Text="Python/Conda Path (exe):" Foreground="#aaaaaa"/>
+            <Grid ColumnDefinitions="*, Auto">
+                <TextBox Grid.Column="0" Name="TxtPython" Background="#252525" Foreground="White"/>
+                <Button Grid.Column="1" Name="BtnBrowsePython" Content="..." Margin="5,0,0,0"/>
+            </Grid>
+        </StackPanel>
+
+        <!-- Output Dir -->
+        <StackPanel Spacing="5">
+            <TextBlock Text="Default Output Folder (Optional):" Foreground="#aaaaaa"/>
+            <Grid ColumnDefinitions="*, Auto">
+                <TextBox Grid.Column="0" Name="TxtOutput" Background="#252525" Foreground="White" Watermark="Leave empty to use source folder"/>
+                <Button Grid.Column="1" Name="BtnBrowseOutput" Content="..." Margin="5,0,0,0"/>
+            </Grid>
+        </StackPanel>
+
+        <!-- Env Name -->
+         <StackPanel Spacing="5">
+            <TextBlock Text="Conda Environment Name:" Foreground="#aaaaaa"/>
+            <TextBox Name="TxtEnvName" Background="#252525" Foreground="White" Text="vasr-cuda13"/>
+        </StackPanel>
+
+        <!-- Chunk Size -->
+        <StackPanel Spacing="5">
+            <TextBlock Text="Processing Chunk Size (Seconds):" Foreground="#aaaaaa"/>
+            <TextBox Name="TxtChunkSize" Background="#252525" Foreground="White" Text="30.0" Watermark="e.g. 5.0 for Laptop, 30.0 for Desktop"/>
+            <TextBlock Text="(Low: 5-10s for weak GPUs | High: 30-60s for strong GPUs)" FontSize="11" Foreground="#666666"/>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,20,0,0">
+            <Button Name="BtnSave" Content="Save &amp; Close" Background="#007ACC" Foreground="White" Padding="15,8"/>
+        </StackPanel>
+    </StackPanel>
+</Window>
