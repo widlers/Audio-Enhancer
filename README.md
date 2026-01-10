@@ -13,7 +13,14 @@ Built with **C# / Avalonia UI** (.NET 9.0) and **Python**.
 -   **Modern UI**: Dark-themed, drag-and-drop interface built with Avalonia.
 -   **Memory Management**: Aggressive garbage collection preventing VRAM leaks on long files.
 
-## 🛠 Prerequisites
+## � Results Comparison
+
+| Original Spectrum | Enhanced Spectrum |
+| :---: | :---: |
+| ![Original](assets/original_spectrum.png) | ![Enhanced](assets/enhanced_spectrum.png) |
+
+
+## �🛠 Prerequisites
 
 To run this application, you need:
 
