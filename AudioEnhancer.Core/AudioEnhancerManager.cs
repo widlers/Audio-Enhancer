@@ -109,15 +109,27 @@ namespace AudioEnhancer.Core
         private async Task<bool> RunEnhancerAsync(string inputWav, string outputWav, CancellationToken ct)
         {
             // SWITCHED TO enhance_track.py for Splitting & Memory Management
-            string wrapperScript = Path.Combine(_scriptsDir, "enhance_track.py");
-            if (!File.Exists(wrapperScript))
+            string buildDir = Path.Combine(_scriptsDir, "dist", "enhance_track");
+            string standaloneExe = Path.Combine(buildDir, "enhance_track.exe");
+            
+            // Allow override if scripts dir is pointing directly to dist
+            if (File.Exists(Path.Combine(_scriptsDir, "enhance_track.exe")))
             {
-                Log($"Script missing: {wrapperScript}");
+               standaloneExe = Path.Combine(_scriptsDir, "enhance_track.exe");
+            }
+
+            bool useStandalone = File.Exists(standaloneExe);
+
+            string scriptOrExe = useStandalone ? standaloneExe : Path.Combine(_scriptsDir, "enhance_track.py");
+            
+            if (!useStandalone && !File.Exists(scriptOrExe))
+            {
+                Log($"Script missing: {scriptOrExe}");
                 return false;
             }
 
             // Fallback to CLI
-            Log("Starting robust enhancement (Splitting 60s & Memory Mgmt)...");
+            Log(useStandalone ? "Starting standalone enhancement..." : "Starting robust enhancement (Splitting 60s & Memory Mgmt)...");
 
             // Construct Process
             string exe = "python";
@@ -134,7 +146,15 @@ namespace AudioEnhancer.Core
                                     Path.GetFileName(_pythonPath).Equals("conda", StringComparison.OrdinalIgnoreCase));
 
 
-            if (UseCondaRun && !isExplicitPython)
+            if (useStandalone)
+            {
+                exe = standaloneExe;
+                // Standalone EXE only needs arguments, not the script path
+                args.Add(inputWav);
+                args.Add(outputWav);
+                args.Add(ChunkDuration.ToString("F1", System.Globalization.CultureInfo.InvariantCulture));
+            }
+            else if (UseCondaRun && !isExplicitPython)
             {
                 exe = "conda"; // Default to PATH
                 if (isExplicitConda) exe = _pythonPath;
@@ -144,7 +164,7 @@ namespace AudioEnhancer.Core
                 args.Add(CondaEnvName);
                 args.Add("--no-capture-output");
                 args.Add("python");
-                args.Add(wrapperScript);
+                args.Add(scriptOrExe);
                 args.Add(inputWav);
                 args.Add(outputWav);
                 args.Add(ChunkDuration.ToString("F1", System.Globalization.CultureInfo.InvariantCulture));
@@ -152,7 +172,7 @@ namespace AudioEnhancer.Core
             else
             {
                 if (!string.IsNullOrEmpty(_pythonPath)) exe = _pythonPath;
-                args.Add(wrapperScript);
+                args.Add(scriptOrExe);
                 args.Add(inputWav);
                 args.Add(outputWav);
                 args.Add(ChunkDuration.ToString("F1", System.Globalization.CultureInfo.InvariantCulture));

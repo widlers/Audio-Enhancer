@@ -45,6 +45,18 @@ This setting controls how many seconds of audio are processed at once.
 *   **5.0s**: Safe Mode for GPUs with low VRAM (< 8GB).
 *   **60.0s**: Experimental. Only for GPUs with massive VRAM (24GB+). May cause instability.
 
+## 📦 Building Standalone Executable (Optional)
+
+If you don't want to require the user to install Python/Conda, you can build a standalone executable.
+
+1.  **Activate Conda**: `conda activate vasr-cuda13`
+2.  **Run Build Script**:
+    ```bash
+    python AudioEnhancer.Core/Scripts/build_standalone.py
+    ```
+3.  **Deploy**: The result will be in `AudioEnhancer.Core/Scripts/dist/enhance_track`.
+    *   The application automatically detects if `enhance_track.exe` exists in `Scripts/dist/enhance_track` (or directly in `Scripts`) and uses it.
+
 ## 📦 Installation & Usage
 
 1.  **Clone the repository**:
