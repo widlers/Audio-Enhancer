@@ -7,3 +7,6 @@ obj/
 output/
 *.log
 settings.json
+
+build_error.txt
+build_log.txt
