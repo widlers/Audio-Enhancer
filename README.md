@@ -17,7 +17,7 @@ Built with **C# / Avalonia UI** (.NET 9.0) and **Python**.
 
 | Original Spectrum | Enhanced Spectrum |
 | :---: | :---: |
-| ![Original](assets/original_spectrum.png) | ![Enhanced](assets/enhanced_spectrum.png) |
+| ![Original](assets/enhanced_spectrum.png) | ![Enhanced](assets/original_spectrum.png) |
 
 
 ## �🛠 Prerequisites
