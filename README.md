@@ -8,12 +8,26 @@ Built with **C# / Avalonia UI** (.NET 9.0) and **Python**.
 ## 🚀 Features
 
 -   **High-Quality AI Enhancement**: Uses the `audiosr` library to upscale and restore audio.
--   **GPU Acceleration**: Fully utilizes NVIDIA GPUs (CUDA) for fast processing.
--   **Smart Chunking**: Splits large files into manageable chunks (configurable!) to prevent crashes and ensure responsive UI.
+-   **Portable Python**: Runs completely offline with an embedded Python environment (no installation required).
+-   **GPU Acceleration**: Utilizes NVIDIA GPUs (CUDA 13.0) via PyTorch Nightly for faster processing (optimized for RTX 5000 series).
+-   **Smart Preprocessing**: Applies an **8000Hz Low-Pass Filter** to prevent AI artifacts (spectrogram holes).
+-   **Professional Normalization**: Optional **EBU R128** normalization to target broadcast standards (-14 LUFS).
+-   **Chunk-Based Processing**: Splits large files into 30s chunks to manage VRAM usage, and is configurable to prevent crashes and ensure responsive UI.
 -   **Modern UI**: Dark-themed, drag-and-drop interface built with Avalonia.
 -   **Memory Management**: Aggressive garbage collection preventing VRAM leaks on long files.
 
-## � Results Comparison
+## 📦 Installation / Quick Start
+
+**1. Download the App**
+Build the solution or use the pre-compiled executable.
+
+**2. Python Environment (Portable)**
+The app runs offline. It tries to download the required 3GB Python environment automatically on first start.
+If you prefer to download it manually (e.g. for faster download managers):
+-   **Download Link**: [pythonlib_cuda13.zip (Pixeldrain)](https://pixeldrain.com/u/cn71ZPJc)
+-   **Instructions**: Extract the `pythonlib` folder next to `AudioEnhancer.UI.exe`.
+
+## 🎵 Results Comparison
 
 | Original Spectrum | Enhanced Spectrum |
 | :---: | :---: |
@@ -45,17 +59,7 @@ This setting controls how many seconds of audio are processed at once.
 *   **5.0s**: Safe Mode for GPUs with low VRAM (< 8GB).
 *   **60.0s**: Experimental. Only for GPUs with massive VRAM (24GB+). May cause instability.
 
-## 📦 Building Standalone Executable (Optional)
 
-If you don't want to require the user to install Python/Conda, you can build a standalone executable.
-
-1.  **Activate Conda**: `conda activate vasr-cuda13`
-2.  **Run Build Script**:
-    ```bash
-    python AudioEnhancer.Core/Scripts/build_standalone.py
-    ```
-3.  **Deploy**: The result will be in `AudioEnhancer.Core/Scripts/dist/enhance_track`.
-    *   The application automatically detects if `enhance_track.exe` exists in `Scripts/dist/enhance_track` (or directly in `Scripts`) and uses it.
 
 ## 📦 Installation & Usage
 

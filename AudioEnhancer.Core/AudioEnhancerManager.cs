@@ -23,6 +23,7 @@ namespace AudioEnhancer.Core
         public string EnhancerDevice { get; set; } // "cuda" or "cpu"
         public double ChunkDuration { get; set; } = 30.0;
         public bool AlwaysCopy { get; set; } = false;
+        public bool NormalizeAudio { get; set; } = false; // EBU R128
 
         public event Action<string>? LogMessage;
         public event Action<string, int>? ProgressChanged; // message, percent
@@ -73,9 +74,32 @@ namespace AudioEnhancer.Core
                     return false;
                 }
 
-                // 3. Convert to Output (FLAC/MP3/Original) - assuming FLAC for now as per FrmEnhanceTest
+                // 3. Normalization (Optional)
+                string readyForExport = enhancedWav;
+                string normalizedWav = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".norm.wav");
+
+                if (NormalizeAudio)
+                {
+                    ProgressChanged?.Invoke("Normalizing (EBU R128)...", 85);
+                    // dynaudnorm (Dynamic) + loudnorm (Static -14 LUFS)
+                    var normArgs = new[] { "-y", "-i", enhancedWav, "-af", "dynaudnorm=f=150:g=15,loudnorm=I=-14:TP=-1.0:LRA=11", "-ar", "48000", normalizedWav };
+
+                    var (normOk, _, normErr) = await RunProcessWithArgumentListAsync(_ffmpegPath, normArgs, TimeSpan.FromMinutes(5), ct);
+                    if (normOk)
+                    {
+                        readyForExport = normalizedWav;
+                    }
+                    else
+                    {
+                        Log($"Normalization failed (skipping): {normErr}");
+                    }
+                }
+
+                // 4. Convert to Output (FLAC/MP3/Original)
                 ProgressChanged?.Invoke("Finalizing...", 90);
-                bool finalOk = await RunFfmpegAsync(enhancedWav, outputFile, ct);
+                bool finalOk = await RunFfmpegAsync(readyForExport, outputFile, ct);
+
+                try { if (File.Exists(normalizedWav)) File.Delete(normalizedWav); } catch { }
 
                 ProgressChanged?.Invoke("Done!", 100);
                 return finalOk;
@@ -96,7 +120,8 @@ namespace AudioEnhancer.Core
             if (output.EndsWith(".flac"))
                 args = new[] { "-y", "-i", input, "-compression_level", "8", output };
             else if (output.EndsWith(".wav"))
-                args = new[] { "-y", "-i", input, "-ar", "44100", "-ac", "2", output };
+                // Apply 8000Hz LowPass filter to optimize for AudioSR (prevents artifacts)
+                args = new[] { "-y", "-i", input, "-af", "lowpass=f=8000", "-ar", "44100", "-ac", "2", output };
 
             var (ok, stdout, stderr) = await RunProcessWithArgumentListAsync(_ffmpegPath, args, TimeSpan.FromMinutes(5), ct);
             if (!ok)
@@ -109,27 +134,16 @@ namespace AudioEnhancer.Core
         private async Task<bool> RunEnhancerAsync(string inputWav, string outputWav, CancellationToken ct)
         {
             // SWITCHED TO enhance_track.py for Splitting & Memory Management
-            string buildDir = Path.Combine(_scriptsDir, "dist", "enhance_track");
-            string standaloneExe = Path.Combine(buildDir, "enhance_track.exe");
-            
-            // Allow override if scripts dir is pointing directly to dist
-            if (File.Exists(Path.Combine(_scriptsDir, "enhance_track.exe")))
+            string wrapperScript = Path.Combine(_scriptsDir, "enhance_track.py");
+            if (!File.Exists(wrapperScript))
             {
-               standaloneExe = Path.Combine(_scriptsDir, "enhance_track.exe");
-            }
 
-            bool useStandalone = File.Exists(standaloneExe);
-
-            string scriptOrExe = useStandalone ? standaloneExe : Path.Combine(_scriptsDir, "enhance_track.py");
-            
-            if (!useStandalone && !File.Exists(scriptOrExe))
-            {
-                Log($"Script missing: {scriptOrExe}");
+                // Allow override if scripts dir is pointing directly to dist
                 return false;
             }
 
             // Fallback to CLI
-            Log(useStandalone ? "Starting standalone enhancement..." : "Starting robust enhancement (Splitting 60s & Memory Mgmt)...");
+            Log("Starting robust enhancement (Splitting 60s & Memory Mgmt)...");
 
             // Construct Process
             string exe = "python";
@@ -146,15 +160,7 @@ namespace AudioEnhancer.Core
                                     Path.GetFileName(_pythonPath).Equals("conda", StringComparison.OrdinalIgnoreCase));
 
 
-            if (useStandalone)
-            {
-                exe = standaloneExe;
-                // Standalone EXE only needs arguments, not the script path
-                args.Add(inputWav);
-                args.Add(outputWav);
-                args.Add(ChunkDuration.ToString("F1", System.Globalization.CultureInfo.InvariantCulture));
-            }
-            else if (UseCondaRun && !isExplicitPython)
+            if (UseCondaRun && !isExplicitPython)
             {
                 exe = "conda"; // Default to PATH
                 if (isExplicitConda) exe = _pythonPath;
@@ -164,7 +170,7 @@ namespace AudioEnhancer.Core
                 args.Add(CondaEnvName);
                 args.Add("--no-capture-output");
                 args.Add("python");
-                args.Add(scriptOrExe);
+                args.Add(wrapperScript);
                 args.Add(inputWav);
                 args.Add(outputWav);
                 args.Add(ChunkDuration.ToString("F1", System.Globalization.CultureInfo.InvariantCulture));
@@ -172,7 +178,7 @@ namespace AudioEnhancer.Core
             else
             {
                 if (!string.IsNullOrEmpty(_pythonPath)) exe = _pythonPath;
-                args.Add(scriptOrExe);
+                args.Add(wrapperScript);
                 args.Add(inputWav);
                 args.Add(outputWav);
                 args.Add(ChunkDuration.ToString("F1", System.Globalization.CultureInfo.InvariantCulture));

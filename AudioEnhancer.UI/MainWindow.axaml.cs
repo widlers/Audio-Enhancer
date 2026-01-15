@@ -8,6 +8,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
+using MsBox.Avalonia;
 
 namespace AudioEnhancer.UI
 {
@@ -38,7 +39,60 @@ namespace AudioEnhancer.UI
             _manager.LogMessage += msg => Dispatcher.UIThread.Post(() => AppendLog(msg));
             _manager.ProgressChanged += (msg, pct) => Dispatcher.UIThread.Post(() => UpdateProgress(msg, pct));
 
-            AppendLog("Application started. Ready.");
+            // Trigger startup check
+            this.Opened += async (s, e) => await CheckAndDownloadPythonAsync();
+        }
+
+        private async Task CheckAndDownloadPythonAsync()
+        {
+            // Only prompt if not available AND not using conda fallback (or prefer portable)
+            if (!PythonEnvironment.IsAvailable())
+            {
+                var result = await MessageBoxManager.GetMessageBoxStandard(
+                    "Python Components Missing",
+                    "The required AI components (Python + PyTorch) are missing.\nDo you want to download them now? (~3 GB)",
+                    MsBox.Avalonia.Enums.ButtonEnum.YesNo).ShowAsync();
+
+                if (result == MsBox.Avalonia.Enums.ButtonResult.Yes)
+                {
+                    await PerformDownloadAsync();
+                }
+            }
+        }
+
+        private async Task PerformDownloadAsync()
+        {
+            var installer = new PythonInstaller();
+            installer.StatusChanged += (s, msg) => Dispatcher.UIThread.Post(() => AppendLog(msg));
+            installer.ProgressChanged += (s, pct) => Dispatcher.UIThread.Post(() =>
+            {
+                ProgressBar.IsVisible = true;
+                ProgressBar.Value = pct;
+                TxtStatus.Text = $"Downloading... {pct:F0}%";
+            });
+
+            BtnStart.IsEnabled = false;
+            try
+            {
+                bool success = await installer.InstallAsync();
+                if (success)
+                {
+                    AppendLog("Installation complete. Restarting environment check...");
+                    TxtStatus.Text = "Installation Complete.";
+                    // Force refresh
+                    BtnStart_Click(null, null);
+                }
+                else
+                {
+                    AppendLog("Installation failed.");
+                    TxtStatus.Text = "Error during installation.";
+                }
+            }
+            finally
+            {
+                BtnStart.IsEnabled = true;
+                ProgressBar.IsVisible = false;
+            }
         }
 
         protected override void OnClosing(WindowClosingEventArgs e)
@@ -104,11 +158,14 @@ namespace AudioEnhancer.UI
 
         private async void BtnStart_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_currentFile) || !File.Exists(_currentFile))
+            // If sender is null (manual refresh), skip file check
+            if (sender != null && (string.IsNullOrEmpty(_currentFile) || !File.Exists(_currentFile)))
             {
                 AppendLog("Error: No valid file selected.");
                 return;
             }
+
+            // ... (rest of logic)
 
             BtnStart.IsEnabled = false;
             ProgressBar.IsVisible = true;
@@ -121,21 +178,40 @@ namespace AudioEnhancer.UI
             // Validate Paths?
             AppendLog($"Settings Loaded: Python={settings.PythonPath}, Env={settings.CondaEnvName}");
 
-            // Re-Init Manager with correct paths
+
+            // CHECK FOR PORTABLE PYTHON
+            if (PythonEnvironment.IsAvailable())
+            {
+                string portablePy = PythonEnvironment.GetEmbeddedPythonPath();
+                AppendLog($"[Portable] Detected embedded python at: {portablePy}");
+                settings.PythonPath = portablePy;
+                _manager.UseCondaRun = false; // Disable conda for portable
+                ChkConda.IsChecked = false;   // Visual update
+                TxtStatus.Text = "Using Portable Python";
+            }
+            else
+            {
+                _manager.UseCondaRun = ChkConda.IsChecked ?? true;
+            }
+
+            // Stop here if we don't have a file (this was just a refresh)
+            if (string.IsNullOrEmpty(_currentFile))
+            {
+                BtnStart.IsEnabled = false; // Keep disabled until file selection
+                return;
+            }
+
+            // Re-Init Manager with correct paths (potentially updated above)
             _manager = new AudioEnhancerManager(settings.PythonPath, settings.FfmpegPath);
-            // Re-wire events (create new or refactor manager to simple properties)
-            // Ideally Manager properties are mutable or we just set them.
-            // Let's modify Manager to allow property update in next step or just re-wire.
-            // For safety, re-wire:
             _manager.LogMessage += msg => Dispatcher.UIThread.Post(() => AppendLog(msg));
             _manager.ProgressChanged += (msg, pct) => Dispatcher.UIThread.Post(() => UpdateProgress(msg, pct));
 
             // Config
             _manager.CondaEnvName = settings.CondaEnvName;
-            _manager.UseCondaRun = ChkConda.IsChecked ?? true;
+            _manager.UseCondaRun = !PythonEnvironment.IsAvailable() && (ChkConda.IsChecked ?? true); // Force false if portable
             _manager.EnhancerDevice = (ChkGpu.IsChecked ?? true) ? "cuda" : "cpu";
             _manager.ChunkDuration = settings.ChunkSizeSeconds;
-
+            _manager.NormalizeAudio = settings.NormalizeAudio;
 
             string dir = Path.GetDirectoryName(_currentFile);
             if (!string.IsNullOrEmpty(settings.DefaultOutputDir) && Directory.Exists(settings.DefaultOutputDir))

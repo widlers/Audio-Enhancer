@@ -12,6 +12,7 @@ namespace AudioEnhancer.Core
         public bool UseConda { get; set; } = true;
         public bool UseGpu { get; set; } = true;
         public double ChunkSizeSeconds { get; set; } = 30.0;
+        public bool NormalizeAudio { get; set; } = false; // EBU R128 Normalization
         public string DefaultOutputDir { get; set; } = "";
     }
 

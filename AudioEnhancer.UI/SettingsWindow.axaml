@@ -2,9 +2,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="AudioEnhancer.UI.SettingsWindow"
         Title="Settings"
-        Width="600" Height="400"
+        Width="600" Height="600"
         WindowStartupLocation="CenterOwner"
-        CanResize="False"
+        CanResize="True"
         Background="#1e1e1e">
 
     <StackPanel Margin="20" Spacing="15">
@@ -48,6 +48,12 @@
             <TextBlock Text="Processing Chunk Size (Seconds):" Foreground="#aaaaaa"/>
             <TextBox Name="TxtChunkSize" Background="#252525" Foreground="White" Text="30.0" Watermark="e.g. 5.0 for Laptop, 30.0 for Desktop"/>
             <TextBlock Text="(Low: 5-10s for weak GPUs | High: 30-60s for strong GPUs)" FontSize="11" Foreground="#666666"/>
+        </StackPanel>
+
+        <!-- Normalization -->
+        <StackPanel Spacing="5">
+            <CheckBox Name="ChkNormalize" Content="Normalize Audio (EBU R128)" Foreground="White" Background="#252525"/>
+            <TextBlock Text="(Smoothes volume &amp; targets typical loudness -14 LUFS)" FontSize="11" Foreground="#666666" Margin="24,-5,0,0"/>
         </StackPanel>
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,20,0,0">

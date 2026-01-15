@@ -20,6 +20,7 @@ namespace AudioEnhancer.UI
             TxtOutput.Text = settings.DefaultOutputDir;
             TxtEnvName.Text = settings.CondaEnvName;
             TxtChunkSize.Text = settings.ChunkSizeSeconds.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+            ChkNormalize.IsChecked = settings.NormalizeAudio;
 
             BtnBrowseFfmpeg.Click += async (s, e) =>
             {
@@ -51,6 +52,8 @@ namespace AudioEnhancer.UI
                     settings.ChunkSizeSeconds = dur;
                     if (settings.ChunkSizeSeconds < 1.0) settings.ChunkSizeSeconds = 5.0; // Minimal-Schutz
                 }
+
+                settings.NormalizeAudio = ChkNormalize.IsChecked ?? false;
 
                 SettingsManager.Save(settings);
                 Close();

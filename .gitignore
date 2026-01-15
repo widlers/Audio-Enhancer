@@ -10,3 +10,6 @@ settings.json
 
 build_error.txt
 build_log.txt
+
+# Python Environment (Too large for Git)
+pythonlib/

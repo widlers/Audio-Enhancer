@@ -11,7 +11,34 @@ import gc
 warnings.filterwarnings("ignore")
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
+# MONKEY PATCH: Fix for 'numpy has no attribute float' in older libraries
+if not hasattr(np, 'float'):
+    np.float = float
+
+# OPTIMIZATION: Use all CPU cores
+if "OMP_NUM_THREADS" not in os.environ:
+    os.environ["OMP_NUM_THREADS"] = str(os.cpu_count())
+    
 try:
+    import torch
+    import torchaudio
+    import soundfile as sf
+    
+    # MONKEY PATCH: torchaudio.load is broken in this nightly build (requires missing torchcodec/ffmpeg)
+    # We replace it with a wrapper around soundfile
+    def patched_load(filepath, **kwargs):
+        # soundfile reads (frames, channels), torchaudio expects (channels, frames)
+        data, sr = sf.read(filepath, dtype='float32')
+        tensor = torch.from_numpy(data)
+        if tensor.ndim == 1:
+            tensor = tensor.unsqueeze(0) # (1, frames)
+        else:
+            tensor = tensor.t() # (channels, frames)
+        return tensor, sr
+        
+    torchaudio.load = patched_load
+
+    torch.set_num_threads(os.cpu_count())
     from audiosr import super_resolution, build_model
 except ImportError:
     print("ERROR: audiosr library not found", file=sys.stderr)
@@ -160,5 +187,7 @@ if __name__ == "__main__":
         if "out of memory" in str(e).lower():
             print("CRITICAL: GPU Speicher voll!", file=sys.stderr)
         else:
+            import traceback
+            traceback.print_exc()
             print(f"CRITICAL ERROR: {e}", file=sys.stderr)
         sys.exit(1)
